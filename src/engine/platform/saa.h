@@ -28,21 +28,18 @@ class DivPlatformSAA1099: public DivDispatch {
   protected:
     struct Channel: public SharedChannel {
       unsigned char freqH, freqL;
-      unsigned char psgMode, envMode;
+      unsigned char psgMode;
       unsigned char pan;
-      unsigned int timerAccum;
       Channel(bool linear=true):
         SharedChannel(15,linear),
         freqH(0),
         freqL(0),
         psgMode(1),
-        envMode(0),
-        pan(255),
-        timerAccum(0) {}
+        pan(255) {}
     };
-    Channel chan[8];
+    Channel chan[6];
     DivDispatchOscBuffer* oscBuf[6];
-    bool isMuted[8];
+    bool isMuted[6];
     struct QueuedWrite {
       unsigned short addr;
       unsigned char val;
@@ -52,15 +49,14 @@ class DivPlatformSAA1099: public DivDispatch {
     };
     FixedQueue<QueuedWrite,256> writes;
     DivPitchTable pitchTable;
-    DivPitchTable timerPitchTable;
     int coreQuality;
     CSAASound* saa_saaSound;
     unsigned char regPool[32];
     unsigned char lastBusy;
 
-    int delay, timerRate, timerCounter;
+    int delay;
 
-    bool extMode, compat, envCombine;
+    bool extMode;
   
     short oldWrites[16];
     short pendingWrites[16];
@@ -72,8 +68,7 @@ class DivPlatformSAA1099: public DivDispatch {
     friend void putDispatchChan(void*,int,int);
 
     void acquire_saaSound(short** buf, size_t len);
-    void updateTimers();
-
+  
   public:
     void acquire(short** buf, size_t len);
     int dispatch(DivCommand c);
@@ -102,7 +97,6 @@ class DivPlatformSAA1099: public DivDispatch {
     void poke(std::vector<DivRegWrite>& wlist);
     const char** getRegisterSheet();
     void setCoreQuality(unsigned char q);
-    void setCompat(bool isCompat);
     int init(DivEngine* parent, int channels, int sugRate, const DivConfig& flags);
     void quit();
 };

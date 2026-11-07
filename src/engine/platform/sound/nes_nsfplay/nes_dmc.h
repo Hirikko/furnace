@@ -32,6 +32,8 @@ namespace xgm
     int option[OPT_END];
     int mask;
     int sm[2][3];
+    // Ganho externo individual de triângulo, ruído e DMC.
+    unsigned int channelGain[3];
     unsigned int reg[0x10];
     unsigned int len_reg;
     unsigned int adr_reg;
@@ -111,6 +113,7 @@ namespace xgm
     void SetClock (double rate);
     void SetOption (int, int);
     void SetMask(int m){ mask = m; }
+    void SetChannelGain(int ch, unsigned int gain);
     void SetStereoMix (int trk, short mixl, short mixr);
   };
 

@@ -50,10 +50,6 @@ DivChannelModeHints DivDispatch::getModeHints(int chan) {
   return DivChannelModeHints();
 }
 
-DivGlobalRegState* DivDispatch::getGlobalRegState(unsigned int index) {
-  return NULL;
-}
-
 DivMacroInt* DivDispatch::getChanMacroInt(int chan) {
   return NULL;
 }
@@ -90,6 +86,10 @@ void DivDispatch::muteChannel(int ch, bool mute) {
 
 int DivDispatch::dispatch(DivCommand c) {
   return 1;
+}
+
+// Implementação padrão: dispatches sem suporte ignoram o ganho externo.
+void DivDispatch::setChannelGain(int ch, unsigned int gain) {
 }
 
 void DivDispatch::softReset() {

@@ -29,7 +29,7 @@
 #ifdef IS_MOBILE
 int logLevel=LOGLEVEL_TRACE;
 #else
-int logLevel=LOGLEVEL_TRACE; // until done
+int logLevel=LOGLEVEL_INFO;
 #endif
 
 FILE* logOut=NULL;
@@ -206,6 +206,12 @@ void _logFileThread() {
 }
 
 bool startLogFile(const char* path) {
+  #ifdef __EMSCRIPTEN__
+  // No navegador, não criar arquivo de log nem thread dedicada.
+  // Os registros continuam disponíveis no console.
+  (void)path;
+  return true;
+  #else
   if (logFileAvail) return true;
 
   // rotate log file if possible
@@ -244,6 +250,7 @@ bool startLogFile(const char* path) {
 
   logFileThread=new std::thread(_logFileThread);
   return true;
+  #endif
 }
 
 bool finishLogFile() {

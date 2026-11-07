@@ -253,18 +253,18 @@ enum apu_mode { APU_60HZ, APU_48HZ };
     nla_table.tnd[i] = (vl * t);\
   }\
 }
-#define _apu_channel_volume_adjust(ch, index)\
-  ((ch))
+#define _apu_channel_volume_adjust(a, ch, index)\
+(((ch) * (unsigned long long)(a)->channelGain[index]) / 65536)
 #define s1_out(a)\
-  (a->muted[0] ? 0 : _apu_channel_volume_adjust(a->S1.output, APU_S1))
+((a)->muted[0] ? 0 : _apu_channel_volume_adjust(a, (a)->S1.output, APU_S1))
 #define s2_out(a)\
-  (a->muted[1] ? 0 : _apu_channel_volume_adjust(a->S2.output, APU_S2))
+((a)->muted[1] ? 0 : _apu_channel_volume_adjust(a, (a)->S2.output, APU_S2))
 #define tr_out(a)\
-  (a->muted[2] ? 0 : _apu_channel_volume_adjust(a->TR.output, APU_TR))
+((a)->muted[2] ? 0 : _apu_channel_volume_adjust(a, (a)->TR.output, APU_TR))
 #define ns_out(a)\
-  (a->muted[3] ? 0 : _apu_channel_volume_adjust(a->NS.output, APU_NS))
+((a)->muted[3] ? 0 : _apu_channel_volume_adjust(a, (a)->NS.output, APU_NS))
 #define dmc_out(a)\
-  (a->muted[4] ? 0 : _apu_channel_volume_adjust(a->DMC.output, APU_DMC))
+((a)->muted[4] ? 0 : _apu_channel_volume_adjust(a, (a)->DMC.output, APU_DMC))
 #define extra_out(ch)\
   (ch * cfg->apu.channel[APU_EXTRA])
 #define pulse_output(a)\
@@ -443,6 +443,7 @@ struct NESAPU {
   int timestamp;
   int lastSample;
   unsigned char muted[5];
+  unsigned int channelGain[5];  // Ganho externo individual dos cinco canais NES (65536 = 100%).
   DivDispatchOscBuffer* oscBuf[5];
 };
 

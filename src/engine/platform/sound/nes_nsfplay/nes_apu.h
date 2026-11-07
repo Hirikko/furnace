@@ -21,9 +21,10 @@ namespace xgm
     { SQR0_MASK = 1, SQR1_MASK = 2, };
 
   protected:
-    int option[OPT_END];        // 各種オプション
+    int option[OPT_END];        // 各種オプション eita
     int mask;
     int sm[2][2];
+    unsigned int channelGain[2];     // Ganho externo individual dos canais de pulso.
 
     unsigned int gclock;
     unsigned char reg[0x20];
@@ -77,6 +78,7 @@ namespace xgm
     void SetClock (double clock);
     void SetOption (int id, int b);
     void SetMask(int m){ mask = m; }
+    void SetChannelGain(int ch, unsigned int gain);
     void SetStereoMix (int trk, short mixl, short mixr);
   };
 

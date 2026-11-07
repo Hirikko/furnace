@@ -45,20 +45,16 @@ void addAALine(ImDrawList* dl, const ImVec2& p1, const ImVec2& p2, const ImU32 c
   dl->AddPolyline(pt,2,color,thickness,ImDrawFlags_None);
 }
 
-void macroHoverNote(int id, float val, void* u) {
+String macroHoverNote(int id, float val, void* u) {
   int* macroVal=(int*)u;
   if ((macroVal[id]&0xc0000000)==0x40000000 || (macroVal[id]&0xc0000000)==0x80000000) {
-    if (val<-60 || val>=120) {
-      ImGui::SetTooltip("???");
-    } else {
-      ImGui::SetTooltip("%d: %s",id,noteNames[(int)val+60]);
-    }
-  } else {
-    ImGui::SetTooltip("%d: %d",id,(int)val);
+    if (val<-60 || val>=120) return "???";
+    return fmt::sprintf("%d: %s",id,noteNames[(int)val+60]);
   }
+  return fmt::sprintf("%d: %d",id,(int)val);
 }
 
-void macroLFOWaves(int id, float val, void* u) {
+String macroLFOWaves(int id, float val, void* u) {
   const char* label="???";
   switch (((int)val)&3) {
     case 0:
@@ -75,7 +71,7 @@ void macroLFOWaves(int id, float val, void* u) {
       break;
     default: break;
   }
-  ImGui::SetTooltip("%d: %s",id,label);
+  return fmt::sprintf("%d: %s",id,label);
 }
 
 // TODO: move to fm.cpp?

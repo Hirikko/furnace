@@ -38,7 +38,7 @@ static const char* suControlBits[5]={
   NULL
 };
 
-void macroSoundUnitWaves(int id, float val, void* u) {
+String macroSoundUnitWaves(int id, float val, void* u) {
   const char* label="???";
   switch (((int)val)&7) {
     case 0:
@@ -67,8 +67,7 @@ void macroSoundUnitWaves(int id, float val, void* u) {
       break;
     default: break;
   }
-
-  ImGui::SetTooltip("%d: %s",id,label);
+  return fmt::sprintf("%d: %s",id,label);
 }
 
 void FurnaceGUI::insEditSU(DivInstrument* ins) {

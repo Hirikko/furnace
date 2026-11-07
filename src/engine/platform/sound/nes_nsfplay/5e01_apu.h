@@ -25,6 +25,7 @@ namespace xgm
     int mask;
     int sm[2][2];
 
+    unsigned int channelGain[2];    // Ganho externo individual dos canais de pulso.
     unsigned int gclock;
     unsigned char reg[0x20];
     double rate, clock;
@@ -81,6 +82,7 @@ namespace xgm
     void SetClock (double clock);
     void SetOption (int id, int b);
     void SetMask(int m){ mask = m; }
+    void SetChannelGain(int ch, unsigned int gain);    // Define o ganho externo de um canal.
     void SetStereoMix (int trk, short mixl, short mixr);
   };
 

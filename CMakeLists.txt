@@ -38,7 +38,7 @@ read the \"developer info\" section of README.md for more information.")
 endif()
 
 if (ANDROID)
-  set(USE_RTMIDI_DEFAULT ON)
+  set(USE_RTMIDI_DEFAULT OFF)
   set(WITH_PORTAUDIO_DEFAULT OFF)
   set(USE_BACKWARD_DEFAULT OFF)
   find_library(TERMUX rt)
@@ -387,7 +387,6 @@ if (USE_RTMIDI)
     list(APPEND DEPENDENCIES_LEGACY_LDFLAGS ${RTMIDI_LDFLAGS})
     message(STATUS "Using system-installed RtMidi")
   else()
-    set(RTMIDI_BUILD_TESTING OFF CACHE BOOL "aaaaaa" FORCE)
     add_subdirectory(extern/rtmidi EXCLUDE_FROM_ALL)
     list(APPEND DEPENDENCIES_LIBRARIES rtmidi)
     message(STATUS "Using vendored RtMidi")
@@ -1533,5 +1532,40 @@ if (NOT ANDROID OR TERMUX)
 endif()
 
 target_compile_definitions(${FURNACE} PRIVATE ${DEPENDENCIES_DEFINES})
+
+# Biblioteca estática do motor para integração com o Lupinho.
+# Mantém os mesmos fontes e configurações do Furnace headless,
+# mas remove o executável, o CLI e o arquivo de metadados.
+set(FURENGINE_SOURCES ${USED_SOURCES})
+
+list(REMOVE_ITEM FURENGINE_SOURCES
+  src/main.cpp
+  src/cli/cli.cpp
+  furnace.appdata.xml
+)
+
+add_library(furengine STATIC ${FURENGINE_SOURCES})
+
+target_include_directories(furengine SYSTEM PRIVATE
+  ${DEPENDENCIES_INCLUDE_DIRS}
+)
+
+target_compile_options(furengine PRIVATE
+  ${DEPENDENCIES_COMPILE_OPTIONS}
+)
+
+target_compile_definitions(furengine PRIVATE
+  ${DEPENDENCIES_DEFINES}
+)
+
+target_link_libraries(furengine PRIVATE
+  ${DEPENDENCIES_LIBRARIES}
+)
+
+if (NOT "${CMAKE_VERSION}" VERSION_LESS "3.16")
+  target_precompile_headers(furengine PRIVATE
+    $<$<COMPILE_LANGUAGE:CXX>:${CMAKE_CURRENT_SOURCE_DIR}/src/pch.h>
+  )
+endif()
 
 message(STATUS "License: ${FURNACE_LICENSE}")

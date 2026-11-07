@@ -95,7 +95,16 @@ void DivPlatformVRC6::acquireDirect(blip_buffer_t** bb, size_t len) {
     // VRC6 part
     vrc6.tick(advance);
     h+=advance-1;
-    int sample=vrc6.out()<<9; // scale to 16 bit
+
+    // Obtém a saída individual de cada canal e aplica seu ganho externo.
+    long long mixed =
+    (long long)vrc6.pulse_out(0) * channelGain[0] +
+    (long long)vrc6.pulse_out(1) * channelGain[1] +
+    (long long)vrc6.sawtooth_out() * channelGain[2];
+
+    // Mantém a escala original do VRC6: saída multiplicada por 512.
+    int sample=(int)((mixed * 512) / 65536);
+
     if (sample!=prevSample) {
       blip_add_delta(bb[0],h,sample-prevSample);
       prevSample=sample;
@@ -452,6 +461,16 @@ void DivPlatformVRC6::muteChannel(int ch, bool mute) {
   }
 }
 
+// Define o ganho externo individual dos canais VRC6.
+void DivPlatformVRC6::setChannelGain(int ch, unsigned int gain) {
+  if (ch < 0 || ch >= 3) return;
+
+  // Limita o ganho a 100%.
+  if (gain > 65536) gain = 65536;
+
+  channelGain[ch] = gain;
+}
+
 void DivPlatformVRC6::forceIns() {
   for (int i=0; i<3; i++) {
     chan[i].insChanged=true;
@@ -572,10 +591,14 @@ int DivPlatformVRC6::init(DivEngine* p, int channels, int sugRate, const DivConf
   samplePitchTable.init(parent);
   dumpWrites=false;
   skipRegisterWrites=false;
+
+  // Inicializa o ganho externo dos três canais VRC6 em volume máximo.
   for (int i=0; i<3; i++) {
+    channelGain[i]=65536;
     isMuted[i]=false;
     oscBuf[i]=new DivDispatchOscBuffer;
   }
+
   setFlags(flags);
   reset();
   return 3;

@@ -805,6 +805,32 @@ void DivPlatformNES::muteChannel(int ch, bool mute) {
   }
 }
 
+// Define o ganho externo individual dos canais NES.
+void DivPlatformNES::setChannelGain(int ch, unsigned int gain) {
+  if (ch < 0 || ch >= 5) return;
+
+  if (!useNP) {
+    if (nes != NULL) {
+      nes->channelGain[ch] = gain > 65536 ? 65536 : gain;
+    }
+    return;
+  }
+
+  if (isE) {
+    if (ch < 2) {
+      if (e1_NP != NULL) e1_NP->SetChannelGain(ch, gain);
+    } else {
+      if (e2_NP != NULL) e2_NP->SetChannelGain(ch - 2, gain);
+    }
+  } else {
+    if (ch < 2) {
+      if (nes1_NP != NULL) nes1_NP->SetChannelGain(ch, gain);
+    } else {
+      if (nes2_NP != NULL) nes2_NP->SetChannelGain(ch - 2, gain);
+    }
+  }
+}
+
 void DivPlatformNES::forceIns() {
   for (int i=0; i<5; i++) {
     chan[i].insChanged=true;
@@ -1110,7 +1136,12 @@ int DivPlatformNES::init(DivEngine* p, int channels, int sugRate, const DivConfi
   writeOscBuf=0;
   for (int i=0; i<5; i++) {
     isMuted[i]=false;
-    if (!useNP) nes->muted[i]=false;
+
+    if (!useNP) {
+      nes->muted[i]=false;
+      nes->channelGain[i]=65536;
+    }
+
     oscBuf[i]=new DivDispatchOscBuffer;
   }
   setFlags(flags);

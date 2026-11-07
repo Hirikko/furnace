@@ -18,6 +18,7 @@
  */
 
 #include "fileOpsCommon.h"
+#include <chrono>
 
 struct PatToWrite {
   unsigned short subsong, chan, pat;
@@ -2431,24 +2432,6 @@ bool DivEngine::loadFur(unsigned char* file, size_t len, int variantID) {
       }
     }
 
-    // SAA1099 env mode compat
-    if (ds.version<257) {
-      for (int i=0; i<ds.systemLen; i++) {
-        if (ds.system[i]==DIV_SYSTEM_SAA1099 || ds.system[i]==DIV_SYSTEM_SAA1099_NEW) {
-          ds.systemFlags[i].set("envCombine",false);
-        }
-      }
-    }
-
-    // POKEY AUDCTL compat
-    if (ds.version<258) {
-      for (int i=0; i<ds.systemLen; i++) {
-        if (ds.system[i]==DIV_SYSTEM_POKEY) {
-          ds.systemFlags[i].set("audctlCombine",false);
-        }
-      }
-    }
-
     // warn on partial pitch linearity
     if (ds.compatFlags.linearPitch>1) {
       ds.compatFlags.linearPitch=1;
@@ -2457,28 +2440,70 @@ bool DivEngine::loadFur(unsigned char* file, size_t len, int variantID) {
     }
     ds.recalcChans();
 
+    // Instrumentação temporária para medir a troca de música.
+    using FurClock = std::chrono::steady_clock;
+    auto furTotalStart = FurClock::now();
+
+    auto furStepStart = FurClock::now();
     if (active) quitDispatch();
-    BUSY_BEGIN_SOFT;
-    saveLock.lock();
-    song.unload();
-    song=ds;
-    hasLoadedSomething=true;
-    changeSong(0);
-    // removal of legacy sample mode
-    if (song.version<239) {
-      if (convertLegacySampleMode()) {
-        addWarning("Furnace no longer supports legacy sample mode. your song has been converted.");
+    auto furQuitTime = std::chrono::duration_cast<std::chrono::microseconds>(
+      FurClock::now() - furStepStart).count();
+
+      furStepStart = FurClock::now();
+      BUSY_BEGIN_SOFT;
+      saveLock.lock();
+      song.unload();
+      song=ds;
+      hasLoadedSomething=true;
+      changeSong(0);
+
+      // removal of legacy sample mode
+      if (song.version<239) {
+        if (convertLegacySampleMode()) {
+          addWarning("Furnace no longer supports legacy sample mode. your song has been converted.");
+        }
       }
-    }
-    saveLock.unlock();
-    BUSY_END;
-    if (active) {
-      initDispatch();
-      BUSY_BEGIN;
-      renderSamples();
-      reset();
+      saveLock.unlock();
       BUSY_END;
-    }
+
+      auto furSongTime = std::chrono::duration_cast<std::chrono::microseconds>(
+        FurClock::now() - furStepStart).count();
+
+        long long furInitTime = 0;
+        long long furSamplesTime = 0;
+        long long furResetTime = 0;
+
+        if (active) {
+          furStepStart = FurClock::now();
+          initDispatch();
+          furInitTime = std::chrono::duration_cast<std::chrono::microseconds>(
+            FurClock::now() - furStepStart).count();
+
+            BUSY_BEGIN;
+            furStepStart = FurClock::now();
+            renderSamples();
+            furSamplesTime = std::chrono::duration_cast<std::chrono::microseconds>(
+              FurClock::now() - furStepStart).count();
+
+              furStepStart = FurClock::now();
+              reset();
+              furResetTime = std::chrono::duration_cast<std::chrono::microseconds>(
+                FurClock::now() - furStepStart).count();
+                BUSY_END;
+        }
+
+        auto furTotalTime = std::chrono::duration_cast<std::chrono::microseconds>(
+          FurClock::now() - furTotalStart).count();
+
+          logI(
+            "[FurTiming] quitDispatch=%lld us | song/changeSong=%lld us | initDispatch=%lld us | renderSamples=%lld us | reset=%lld us | total=%lld us",
+            furQuitTime,
+            furSongTime,
+            furInitTime,
+            furSamplesTime,
+            furResetTime,
+            furTotalTime
+          );
   } catch (EndOfFileException& e) {
     logE("premature end of file!");
     lastError="incomplete file";

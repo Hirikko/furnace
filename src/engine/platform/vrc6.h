@@ -46,6 +46,9 @@ class DivPlatformVRC6: public DivDispatch, public vrcvi_intf {
   Channel chan[3];
   DivDispatchOscBuffer* oscBuf[3];
   bool isMuted[3];
+
+  // Ganho externo individual dos três canais VRC6.
+  unsigned int channelGain[3];
   struct QueuedWrite {
     unsigned short addr;
     unsigned char val;
@@ -75,6 +78,7 @@ class DivPlatformVRC6: public DivDispatch, public vrcvi_intf {
     void forceIns();
     void tick(bool sysTick=true);
     void muteChannel(int ch, bool mute);
+    void setChannelGain(int ch, unsigned int gain) override;    // Define o ganho externo individual de um canal VRC6.
     bool keyOffAffectsArp(int ch);
     bool hasAcquireDirect();
     void setFlags(const DivConfig& flags);

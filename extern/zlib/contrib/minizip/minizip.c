@@ -1,14 +1,15 @@
 /*
    minizip.c
-   sample part of the MiniZip project - ( https://www.winimage.com/zLibDll/minizip.html )
+   Version 1.1, February 14h, 2010
+   sample part of the MiniZip project - ( http://www.winimage.com/zLibDll/minizip.html )
 
-         Copyright (C) 1998-2026 Gilles Vollant (minizip) ( https://www.winimage.com/zLibDll/minizip.html )
+         Copyright (C) 1998-2010 Gilles Vollant (minizip) ( http://www.winimage.com/zLibDll/minizip.html )
 
          Modifications of Unzip for Zip64
          Copyright (C) 2007-2008 Even Rouault
 
          Modifications for Zip64 support on both zip and unzip
-         Copyright (C) 2009-2010 Mathias Svensson ( https://result42.com )
+         Copyright (C) 2009-2010 Mathias Svensson ( http://result42.com )
 */
 
 
@@ -40,9 +41,6 @@
 
 
 
-#ifndef _CRT_SECURE_NO_WARNINGS
-#  define _CRT_SECURE_NO_WARNINGS
-#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -61,7 +59,6 @@
 #endif
 
 #include "zip.h"
-#include "ints.h"
 
 #ifdef _WIN32
         #define USEWIN32IOAPI
@@ -77,7 +74,6 @@
 /* f: name of file to get info on, tmzip: return value: access,
    modification and creation times, dt: dostime */
 static int filetime(const char *f, tm_zip *tmzip, uLong *dt) {
-  (void)tmzip;
   int ret = 0;
   {
       FILETIME ftLocal;
@@ -95,7 +91,8 @@ static int filetime(const char *f, tm_zip *tmzip, uLong *dt) {
   }
   return ret;
 }
-#elif defined(__unix__) || defined(__unix) || defined(__APPLE__)
+#else
+#if defined(unix) || defined(__APPLE__)
 /* f: name of file to get info on, tmzip: return value: access,
    modification and creation times, dt: dostime */
 static int filetime(const char *f, tm_zip *tmzip, uLong *dt) {
@@ -146,6 +143,7 @@ static int filetime(const char *f, tm_zip *tmzip, uLong *dt) {
     return 0;
 }
 #endif
+#endif
 
 
 
@@ -163,7 +161,7 @@ static int check_exist_file(const char* filename) {
 
 static void do_banner(void) {
     printf("MiniZip 1.1, demo of zLib + MiniZip64 package, written by Gilles Vollant\n");
-    printf("more info on MiniZip at https://www.winimage.com/zLibDll/minizip.html\n\n");
+    printf("more info on MiniZip at http://www.winimage.com/zLibDll/minizip.html\n\n");
 }
 
 static void do_help(void) {
@@ -194,7 +192,7 @@ static int getFileCrc(const char* filenameinzip, void* buf, unsigned long size_b
         do
         {
             err = ZIP_OK;
-            size_read = (unsigned long)fread(buf,1,size_buf,fin);
+            size_read = fread(buf,1,size_buf,fin);
             if (size_read < size_buf)
                 if (feof(fin)==0)
             {
@@ -226,7 +224,7 @@ static int isLargeFile(const char* filename) {
     FSEEKO_FUNC(pFile, 0, SEEK_END);
     pos = (ZPOS64_T)FTELLO_FUNC(pFile);
 
-                printf("File : %s is %"PUI64" bytes\n", filename, pos);
+                printf("File : %s is %llu bytes\n", filename, pos);
 
     if(pos >= 0xffffffff)
      largeFile = 1;
@@ -246,7 +244,7 @@ int main(int argc, char *argv[]) {
     char filename_try[MAXFILENAME+16];
     int zipok;
     int err=0;
-    unsigned long size_buf=0;
+    size_t size_buf=0;
     void* buf=NULL;
     const char* password=NULL;
 
@@ -308,7 +306,7 @@ int main(int argc, char *argv[]) {
     }
     else
     {
-        int len;
+        int i,len;
         int dot_found=0;
 
         zipok = 1 ;
@@ -434,7 +432,7 @@ int main(int argc, char *argv[]) {
                      }
                      if( lastslash != NULL )
                      {
-                         savefilenameinzip = lastslash+1; /* base filename follows last slash. */
+                         savefilenameinzip = lastslash+1; // base filename follows last slash.
                      }
                  }
 
@@ -507,5 +505,5 @@ int main(int argc, char *argv[]) {
     }
 
     free(buf);
-    return err;
+    return 0;
 }

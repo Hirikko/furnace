@@ -63,10 +63,10 @@ class DivWorkPool;
 // we're not reaching 1.0 until we have export for all major systems.
 //
 // development/interim versions go by the format version, prepended with "dev".
-#define DIV_VERSION "dev258"
+#define DIV_VERSION "dev256"
 // format version.
 // this shall be bumped on each file format/breaking change.
-#define DIV_ENGINE_VERSION 258
+#define DIV_ENGINE_VERSION 256
 // for imports
 #define DIV_VERSION_MOD 0xff01
 #define DIV_VERSION_FC 0xff02
@@ -1360,6 +1360,12 @@ class DivEngine {
      */
     DivDispatch* getDispatch(int index);
     /**
+     * Define os ganhos externos de vários canais lógicos.
+     * Os ganhos usam formato fixo 16.16, sendo 65536 o volume integral.
+     * A operação é sincronizada com o processamento de áudio.
+     */
+    void setChannelGains(const unsigned int* gains, int count);
+    /**
      * parse old system setup description.
      * the system description used in old version of Furnace consisted of a series of integers in the following order:
      * - chip ID
@@ -1827,9 +1833,6 @@ class DivEngine {
 
     // is running
     bool isRunning();
-
-    // is freelance
-    bool isFreelance();
 
     // is stepping
     bool isStepping();

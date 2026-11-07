@@ -165,9 +165,13 @@ namespace xgm
     }
     else
     {
-        m[0] = (out[0] * square_linear) / 15;
-        m[1] = (out[1] * square_linear) / 15;
+      m[0] = (out[0] * square_linear) / 15;
+      m[1] = (out[1] * square_linear) / 15;
     }
+
+    // Aplica o ganho externo sem modificar o volume original da música.
+    m[0] = (int)(((long long)m[0] * channelGain[0]) >> 16);
+    m[1] = (int)(((long long)m[1] * channelGain[1]) >> 16);
 
     b[0]  = m[0] * sm[0][0];
     b[0] += m[1] * sm[0][1];
@@ -196,9 +200,12 @@ namespace xgm
 
     square_linear = square_table[15]; // match linear scale to one full volume square of nonlinear
 
-    for(int c=0;c<2;++c)
-        for(int t=0;t<2;++t)
-            sm[c][t] = 128;
+    for(int c=0;c<2;++c) {
+      for(int t=0;t<2;++t)
+        sm[c][t] = 128;
+
+      channelGain[c] = 65536;
+    }
   }
 
   NES_APU::~NES_APU ()
@@ -274,6 +281,11 @@ namespace xgm
       if (trk > 1) return;
       sm[0][trk] = mixl;
       sm[1][trk] = mixr;
+  }
+
+  void NES_APU::SetChannelGain(int ch, unsigned int gain) {
+    if (ch < 0 || ch >= 2) return;
+    channelGain[ch] = gain;
   }
 
   bool NES_APU::Write (unsigned int adr, unsigned int val, unsigned int id)

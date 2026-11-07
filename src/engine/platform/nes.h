@@ -106,6 +106,7 @@ class DivPlatformNES: public DivDispatch {
     void forceIns();
     void tick(bool sysTick=true);
     void muteChannel(int ch, bool mute);
+    void setChannelGain(int ch, unsigned int gain) override;
     bool keyOffAffectsArp(int ch);
     bool hasAcquireDirect();
     float getPostAmp();

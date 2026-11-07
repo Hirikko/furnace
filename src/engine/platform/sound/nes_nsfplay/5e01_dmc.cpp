@@ -42,8 +42,7 @@ namespace xgm
     0x0F, 0x8F, 0x4F, 0xCF, 0x2F, 0xAF, 0x6F, 0xEF, 0x1F, 0x9F, 0x5F, 0xDF, 0x3F, 0xBF, 0x7F, 0xFF,
   };
 
-  I5E01_DMC::I5E01_DMC() : GETA_BITS(20)
-  {
+  I5E01_DMC::I5E01_DMC() : GETA_BITS(20){
     SetClock(DEFAULT_CLOCK);
     SetRate(DEFAULT_RATE);
     SetPal(false);
@@ -64,8 +63,13 @@ namespace xgm
     frame_sequence_length = 7458;
     frame_sequence_steps = 4;
 
-    for (int c = 0;c < 2;++c)
-      for (int t = 0;t < 3;++t)
+    // Inicializa os ganhos externos em 1.0.
+    for (int i = 0; i < 3; ++i)
+      channelGain[i] = 65536;
+
+    // Inicializa a distribuição estéreo.
+    for (int c = 0; c < 2; ++c)
+      for (int t = 0; t < 3; ++t)
         sm[c][t] = 128;
   }
 
@@ -333,8 +337,7 @@ namespace xgm
     out[2] = calc_dmc(clocks);
   }
 
-  unsigned int I5E01_DMC::Render(int b[2])
-  {
+  unsigned int I5E01_DMC::Render(int b[2]){
     out[0] = (mask & 1) ? 0 : out[0];
     out[1] = (mask & 2) ? 0 : out[1];
     out[2] = (mask & 4) ? 0 : out[2];
@@ -361,8 +364,7 @@ namespace xgm
     }
 
     // anti-click nullifies any 4011 write but preserves nonlinearity
-    if (option[OPT_DPCM_ANTI_CLICK])
-    {
+    if (option[OPT_DPCM_ANTI_CLICK]){
       if (dmc_pop) // $4011 will cause pop this frame
       {
         // adjust offset to counteract pop
@@ -384,6 +386,12 @@ namespace xgm
       else if (dmc_pop_offset < 0) ++dmc_pop_offset;
     }
 
+    // Aplica o ganho externo depois do mixer e da correção anti-click.
+    for (int i = 0; i < 3; ++i)
+    {
+      m[i] = (int)(((long long)m[i] * channelGain[i]) >> 16);
+    }
+
     b[0] = m[0] * sm[0][0];
     b[0] += m[1] * sm[0][1];
     b[0] += m[2] * sm[0][2];
@@ -395,6 +403,12 @@ namespace xgm
     b[1] >>= 7;
 
     return 2;
+  }
+
+  void I5E01_DMC::SetChannelGain(int ch, unsigned int gain)
+  {
+    if (ch < 0 || ch >= 3) return;
+    channelGain[ch] = gain;
   }
 
   void I5E01_DMC::SetClock(double c)

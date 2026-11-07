@@ -63,9 +63,13 @@ namespace xgm
     frame_sequence_length = 7458;
     frame_sequence_steps = 4;
 
-    for(int c=0;c<2;++c)
-        for(int t=0;t<3;++t)
-            sm[c][t] = 128;
+    for(int c=0;c<2;++c) {
+      for(int t=0;t<3;++t)
+        sm[c][t] = 128;
+    }
+
+    for(int i=0;i<3;++i)
+      channelGain[i] = 65536;
   }
 
 
@@ -79,6 +83,11 @@ namespace xgm
       if (trk > 2) return;
       sm[0][trk] = mixl;
       sm[1][trk] = mixr;
+  }
+
+  void NES_DMC::SetChannelGain(int ch, unsigned int gain) {
+    if (ch < 0 || ch >= 3) return;
+    channelGain[ch] = gain;
   }
 
   void NES_DMC::FrameSequence(int s)
@@ -361,6 +370,11 @@ namespace xgm
         // roll off offset (not ideal, but prevents overflow)
         if (dmc_pop_offset > 0) --dmc_pop_offset;
         else if (dmc_pop_offset < 0) ++dmc_pop_offset;
+    }
+
+    // Aplica o ganho externo depois do mixer e da correção anti-click.
+    for (int i=0; i<3; ++i) {
+      m[i] = (int)(((long long)m[i] * channelGain[i]) >> 16);
     }
 
     b[0]  = m[0] * sm[0][0];

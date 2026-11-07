@@ -107,7 +107,7 @@ namespace xgm
     if (length_counter[i] > 0 &&
       freq[i] >= 8 &&
       sfreq[i] < 0x800
-      )
+    )
     {
       int v = envelope_disable[i] ? volume[i] : envelope_counter[i];
       ret = sqrtbl[duty[i]][sphase[i]] ? v : 0;
@@ -139,8 +139,7 @@ namespace xgm
   }
 
   // 生成される波形の振幅は0-8191
-  unsigned int I5E01_APU::Render(int b[2])
-  {
+  unsigned int I5E01_APU::Render(int b[2]){
     out[0] = (mask & 1) ? 0 : out[0];
     out[1] = (mask & 2) ? 0 : out[1];
 
@@ -169,6 +168,10 @@ namespace xgm
       m[1] = (out[1] * square_linear) / 15;
     }
 
+    // Aplica o ganho externo sem modificar o volume original da música.
+    m[0] = (int)(((long long)m[0] * channelGain[0]) >> 16);
+    m[1] = (int)(((long long)m[1] * channelGain[1]) >> 16);
+
     b[0] = m[0] * sm[0][0];
     b[0] += m[1] * sm[0][1];
     b[0] >>= 7;
@@ -180,8 +183,7 @@ namespace xgm
     return 2;
   }
 
-  I5E01_APU::I5E01_APU()
-  {
+  I5E01_APU::I5E01_APU(){
     SetClock(DEFAULT_CLOCK);
     SetRate(DEFAULT_RATE);
     option[OPT_UNMUTE_ON_RESET] = true;
@@ -191,14 +193,18 @@ namespace xgm
     option[OPT_NEGATE_SWEEP_INIT] = false;
 
     square_table[0] = 0;
-    for (int i = 1;i < 32;i++)
+    for (int i = 1; i < 32; i++)
       square_table[i] = (int)((8192.0 * 95.88) / (8128.0 / i + 100));
 
     square_linear = square_table[15]; // match linear scale to one full volume square of nonlinear
 
-    for (int c = 0;c < 2;++c)
-      for (int t = 0;t < 2;++t)
+    for (int c = 0; c < 2; ++c)
+    {
+      channelGain[c] = 65536;
+
+      for (int t = 0; t < 2; ++t)
         sm[c][t] = 128;
+    }
   }
 
   I5E01_APU::~I5E01_APU()
@@ -294,30 +300,29 @@ namespace xgm
     return clock / 16 / (freq[1] + 1);
   }
 
-  bool I5E01_APU::Write(unsigned int adr, unsigned int val, unsigned int id)
-  {
+  bool I5E01_APU::Write(unsigned int adr, unsigned int val, unsigned int id){
     int ch;
 
     // hack
     adr+=0x100;
 
     static const unsigned char length_table[32] = {
-        0x0A, 0xFE,
-        0x14, 0x02,
-        0x28, 0x04,
-        0x50, 0x06,
-        0xA0, 0x08,
-        0x3C, 0x0A,
-        0x0E, 0x0C,
-        0x1A, 0x0E,
-        0x0C, 0x10,
-        0x18, 0x12,
-        0x30, 0x14,
-        0x60, 0x16,
-        0xC0, 0x18,
-        0x48, 0x1A,
-        0x10, 0x1C,
-        0x20, 0x1E
+      0x0A, 0xFE,
+      0x14, 0x02,
+      0x28, 0x04,
+      0x50, 0x06,
+      0xA0, 0x08,
+      0x3C, 0x0A,
+      0x0E, 0x0C,
+      0x1A, 0x0E,
+      0x0C, 0x10,
+      0x18, 0x12,
+      0x30, 0x14,
+      0x60, 0x16,
+      0xC0, 0x18,
+      0x48, 0x1A,
+      0x10, 0x1C,
+      0x20, 0x1E
     };
 
     if (0x4100 <= adr && adr < 0x4108)
@@ -328,41 +333,41 @@ namespace xgm
       ch = adr >> 2;
       switch (adr)
       {
-      case 0x0:
-      case 0x4:
-        volume[ch] = val & 15;
-        envelope_disable[ch] = (val >> 4) & 1;
-        envelope_loop[ch] = (val >> 5) & 1;
-        envelope_div_period[ch] = (val & 15);
-        duty[ch] = (val >> 6) & 3;
-        if (option[OPT_DUTY_SWAP])
-        {
-          if (duty[ch] == 1) duty[ch] = 2;
-          else if (duty[ch] == 2) duty[ch] = 1;
-        }
-        break;
+        case 0x0:
+        case 0x4:
+          volume[ch] = val & 15;
+          envelope_disable[ch] = (val >> 4) & 1;
+          envelope_loop[ch] = (val >> 5) & 1;
+          envelope_div_period[ch] = (val & 15);
+          duty[ch] = (val >> 6) & 3;
+          if (option[OPT_DUTY_SWAP])
+          {
+            if (duty[ch] == 1) duty[ch] = 2;
+            else if (duty[ch] == 2) duty[ch] = 1;
+          }
+          break;
 
-      case 0x1:
-      case 0x5:
-        sweep_enable[ch] = (val >> 7) & 1;
-        sweep_div_period[ch] = (((val >> 4) & 7));
-        sweep_mode[ch] = (val >> 3) & 1;
-        sweep_amount[ch] = val & 7;
-        sweep_write[ch] = true;
-        sweep_sqr(ch);
-        break;
+        case 0x1:
+        case 0x5:
+          sweep_enable[ch] = (val >> 7) & 1;
+          sweep_div_period[ch] = (((val >> 4) & 7));
+          sweep_mode[ch] = (val >> 3) & 1;
+          sweep_amount[ch] = val & 7;
+          sweep_write[ch] = true;
+          sweep_sqr(ch);
+          break;
 
-      case 0x2:
-      case 0x6:
-        freq[ch] = val | (freq[ch] & 0x700);
-        sweep_sqr(ch);
-        break;
+        case 0x2:
+        case 0x6:
+          freq[ch] = val | (freq[ch] & 0x700);
+          sweep_sqr(ch);
+          break;
 
-      case 0x3:
-      case 0x7:
-        freq[ch] = (freq[ch] & 0xFF) | ((val & 0x7) << 8);
-        if (option[OPT_PHASE_REFRESH])
-          sphase[ch] = 0;
+        case 0x3:
+        case 0x7:
+          freq[ch] = (freq[ch] & 0xFF) | ((val & 0x7) << 8);
+          if (option[OPT_PHASE_REFRESH])
+            sphase[ch] = 0;
         envelope_write[ch] = true;
         if (enable[ch])
         {
@@ -371,8 +376,8 @@ namespace xgm
         sweep_sqr(ch);
         break;
 
-      default:
-        return false;
+        default:
+          return false;
       }
       reg[adr] = val;
       return true;
@@ -398,4 +403,11 @@ namespace xgm
 
     return false;
   }
+
+  void I5E01_APU::SetChannelGain(int ch, unsigned int gain)
+  {
+    if (ch < 0 || ch >= 2) return;
+    channelGain[ch] = gain;
+  }
+
 } // namespace xgm;

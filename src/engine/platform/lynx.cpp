@@ -643,27 +643,21 @@ DivPlatformLynx::~DivPlatformLynx() {
 }
 
 DivPlatformLynx::MikeyFreqDiv::MikeyFreqDiv(int frequency) {
+
   int clamped=clamp(frequency, 36, 16383);
 
   auto top=bsr(clamped);
   
-  if (top>8)
+  if (top>7)
   {
-    clockDivider=top-8;
-    backup=(clamped>>(top-8))-1;
-    // I know this looks really stupid. I am sorry.
-    //logV("low bits: %d (%d, %d)",clamped&((1U<<(top-8))-1),((1U<<(top-8))-1),(1U<<(top-9)));
-    if (clamped&((1U<<(top-8))-1)&((1U<<(top-9)))) {
-      backup++;
-    }
+    clockDivider=top-7;
+    backup=clamped>>(top-7);
   }
   else
   {
     clockDivider=0;
-    backup=clamped-1;
+    backup=clamped;
   }
-  
-  //logV("set freq to %x/%x from %x",clockDivider,backup,frequency);
 }
 
 DivPlatformLynx::MikeyDuty::MikeyDuty(int duty) {

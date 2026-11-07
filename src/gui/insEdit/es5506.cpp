@@ -30,8 +30,8 @@ static const char* es5506ControlModes[3]={
   NULL
 };
 
-void macroHoverES5506FilterMode(int id, float val, void* u) {
-  const char* mode="???";
+String macroHoverES5506FilterMode(int id, float val, void* u) {
+  String mode="???";
   switch (((int)val)&3) {
     case 0:
       mode=_("HP/K2, HP/K2");
@@ -48,7 +48,7 @@ void macroHoverES5506FilterMode(int id, float val, void* u) {
     default:
       break;
   }
-  ImGui::SetTooltip("%d: %s",id,mode);
+  return fmt::sprintf("%d: %s",id,mode);
 }
 
 

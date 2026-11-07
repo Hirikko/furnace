@@ -1,6 +1,9 @@
 /* crypt.h -- base code for crypt/uncrypt ZIPfile
 
-   Copyright (C) 1998-2026 Gilles Vollant
+
+   Version 1.01e, February 12th, 2005
+
+   Copyright (C) 1998-2005 Gilles Vollant
 
    This code is a modified version of crypting code in Infozip distribution
 
@@ -20,7 +23,7 @@
    This code support the "Traditional PKWARE Encryption".
 
    The new AES encryption added on Zip format by Winzip (see the page
-   https://www.winzip.com/aes_info.htm ) and PKWare PKZip 5.x Strong
+   http://www.winzip.com/aes_info.htm ) and PKWare PKZip 5.x Strong
    Encryption is not supported.
 */
 
@@ -47,7 +50,7 @@ static int update_keys(unsigned long* pkeys, const z_crc_t* pcrc_32_tab, int c) 
     (*(pkeys+1)) += (*(pkeys+0)) & 0xff;
     (*(pkeys+1)) = (*(pkeys+1)) * 134775813L + 1;
     {
-      int keyshift = (int)((*(pkeys+1)) >> 24);
+      register int keyshift = (int)((*(pkeys+1)) >> 24);
       (*(pkeys+2)) = CRC32((*(pkeys+2)), keyshift);
     }
     return c;
@@ -77,10 +80,11 @@ static void init_keys(const char* passwd, unsigned long* pkeys, const z_crc_t* p
 #ifdef INCLUDECRYPTINGCODE_IFCRYPTALLOWED
 
 #define RAND_HEAD_LEN  12
+   /* "last resort" source for second part of crypt seed pattern */
+#  ifndef ZCR_SEED2
+#    define ZCR_SEED2 3141592654UL      /* use PI as default pattern */
+#  endif
 
-/* The random header bytes come from the PCG32 generator in skipset.h, which
-   must be included before this file when INCLUDECRYPTINGCODE_IFCRYPTALLOWED is
-   defined. */
 static unsigned crypthead(const char* passwd,       /* password string */
                           unsigned char* buf,       /* where to write header */
                           int bufSize,
@@ -91,25 +95,23 @@ static unsigned crypthead(const char* passwd,       /* password string */
     int t;                       /* temporary */
     int c;                       /* random byte */
     unsigned char header[RAND_HEAD_LEN-2]; /* random header */
-    static int seeded = 0;       /* true once gen has been seeded */
-    static set_rand_t gen;       /* random header generator, persists so that
-                                    each header is different */
+    static unsigned calls = 0;   /* ensure different random header each time */
 
     if (bufSize<RAND_HEAD_LEN)
       return 0;
 
-    /* First generate RAND_HEAD_LEN-2 random bytes. We encrypt the random
-     * bytes to get less predictability.
+    /* First generate RAND_HEAD_LEN-2 random bytes. We encrypt the
+     * output of rand() to get less predictability, since rand() is
+     * often poorly implemented.
      */
-    if (!seeded)
+    if (++calls == 1)
     {
-        set_uniq(&gen, &gen);
-        seeded = 1;
+        srand((unsigned)(time(NULL) ^ ZCR_SEED2));
     }
     init_keys(passwd, pkeys, pcrc_32_tab);
     for (n = 0; n < RAND_HEAD_LEN-2; n++)
     {
-        c = (int)(set_rand(&gen) >> 24);
+        c = (rand() >> 7) & 0xff;
         header[n] = (unsigned char)zencode(pkeys, pcrc_32_tab, c, t);
     }
     /* Encrypt random header (last two bytes is high word of crc) */

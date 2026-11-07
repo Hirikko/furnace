@@ -1605,6 +1605,32 @@ DivDispatch* DivEngine::getDispatch(int index) {
   return disCont[index].dispatch;
 }
 
+// Aplica os ganhos externos dos canais lógicos aos dispatches ativos.
+void DivEngine::setChannelGains(const unsigned int* gains, int count) {
+  if (gains == NULL || count <= 0) return;
+
+  std::lock_guard<std::mutex> lock(isBusy);
+
+  int channelCount = song.chans;
+
+  if (channelCount > count) channelCount = count;
+  if (channelCount > DIV_MAX_CHANS) channelCount = DIV_MAX_CHANS;
+
+  for (int channel = 0; channel < channelCount; channel++) {
+    int dispatchIndex = song.dispatchOfChan[channel];
+    int dispatchChannel = song.dispatchChanOfChan[channel];
+
+    if (dispatchChannel < 0) continue;
+    if (dispatchIndex < 0 || dispatchIndex >= song.systemLen) continue;
+
+    DivDispatch* dispatch = getDispatch(dispatchIndex);
+
+    if (dispatch == NULL) continue;
+
+    dispatch->setChannelGain(dispatchChannel, gains[channel]);
+  }
+}
+
 void DivEngine::setLoops(int loops) {
   remainingLoops=loops;
 }
@@ -2600,10 +2626,6 @@ bool DivEngine::isPlaying() {
 
 bool DivEngine::isRunning() {
   return playing;
-}
-
-bool DivEngine::isFreelance() {
-  return freelance;
 }
 
 bool DivEngine::isStepping() {
@@ -4299,8 +4321,12 @@ bool DivEngine::deinitAudioBackend(bool dueToSwitchMaster) {
 }
 
 bool DivEngine::prePreInit() {
+  std::printf("[Furnace prePreInit] entrada\n");
   // init config
   initConfDir();
+
+  std::printf("[Furnace prePreInit] depois de initConfDir\n");
+
   logD("config path: %s",configPath.c_str());
 
   configLoaded=true;
@@ -4331,7 +4357,10 @@ bool DivEngine::preInit(bool noSafeMode) {
   */
 
   String logPath=configPath+DIR_SEPARATOR_STR+"furnace.log";
+
+  std::printf("[Furnace preInit] antes de startLogFile\n");
   startLogFile(logPath.c_str());
+  std::printf("[Furnace preInit] depois de startLogFile\n");
 
   if (!conf.has("opn1Core")) {
     if (conf.has("opnCore")) {
